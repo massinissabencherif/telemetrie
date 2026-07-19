@@ -73,10 +73,44 @@ services:
       - traefik.http.services.glitchtip.loadbalancer.server.port=8000
     restart: unless-stopped
 
+  umami-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_POSTGRES_PASSWORD}
+    volumes:
+      - umami-pg-data:/var/lib/postgresql/data
+    networks: [analytics-internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    depends_on:
+      umami-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_POSTGRES_PASSWORD}@umami-postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    networks: [proxy, analytics-internal]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.umami.rule=Host(`umami.localhost`)
+      - traefik.http.routers.umami.entrypoints=web
+      - traefik.http.services.umami.loadbalancer.server.port=3000
+    restart: unless-stopped
+
 volumes:
   glitchtip-pg-data:
   glitchtip-uploads:
+  umami-pg-data:
 
 networks:
   proxy:
   glitchtip-internal:
+  analytics-internal:
