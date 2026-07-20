@@ -1,0 +1,11 @@
+{
+  "name": "eshop-monitor-demo-traffic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node generate-demo-traffic.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}
