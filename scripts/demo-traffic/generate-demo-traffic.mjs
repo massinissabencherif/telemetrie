@@ -55,7 +55,7 @@ async function runJourney(browser, index) {
     return
   }
 
-  await page.goto(`${BASE_URL}/cart`)
+  await page.click('a[href="/cart"]')
   await page.getByTestId('go-to-checkout').click()
   await page.waitForTimeout(300)
   await page.getByTestId('address-input').fill('12 rue des Artisans, 69000 Lyon')
