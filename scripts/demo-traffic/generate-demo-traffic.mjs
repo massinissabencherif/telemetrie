@@ -4,8 +4,32 @@ const BASE_URL = process.env.BASE_URL ?? 'http://shop.localhost'
 const JOURNEY_COUNT = Number(process.argv[2] ?? 30)
 const UTM_SOURCES = ['newsletter', 'google-ads', 'facebook', null, null]
 
+// Playwright's default headless Chromium reports "HeadlessChrome" in its user agent,
+// which Umami's bot filter treats as a bot: it accepts the request (200 OK) but
+// silently discards it (responds { beep: 'boop' }) instead of recording a visit.
+// Regular-looking desktop UAs avoid that filter so events actually count. Umami
+// also derives its visitor/session id from a hash of IP + user agent, and every
+// journey here shares the same local IP — so each journey gets a freshly
+// generated, high-cardinality UA (random OS x random Chrome build) instead of a
+// small fixed pool, otherwise journeys sharing a UA would merge into one long
+// session and the bounce rate would read as artificially 0.
+const DESKTOP_OS_STRINGS = [
+  'Macintosh; Intel Mac OS X 10_15_7',
+  'Macintosh; Intel Mac OS X 13_2_1',
+  'Windows NT 10.0; Win64; x64',
+  'Windows NT 11.0; Win64; x64',
+  'X11; Linux x86_64'
+]
+
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)]
+}
+
+function randomUserAgent() {
+  const os = pick(DESKTOP_OS_STRINGS)
+  const major = 140 + Math.floor(Math.random() * 12)
+  const build = 1000 + Math.floor(Math.random() * 8999)
+  return `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.${build}.100 Safari/537.36`
 }
 
 function proceeds(probability) {
@@ -13,7 +37,7 @@ function proceeds(probability) {
 }
 
 async function runJourney(browser, index) {
-  const context = await browser.newContext()
+  const context = await browser.newContext({ userAgent: randomUserAgent() })
   const page = await context.newPage()
   const utmSource = pick(UTM_SOURCES)
   const landingUrl = utmSource ? `${BASE_URL}/?utm_source=${utmSource}` : `${BASE_URL}/`
