@@ -68,6 +68,7 @@ services:
     networks: [proxy, glitchtip-internal]
     labels:
       - traefik.enable=true
+      - traefik.docker.network=proxy
       - traefik.http.routers.glitchtip.rule=Host(`glitchtip.localhost`)
       - traefik.http.routers.glitchtip.entrypoints=web
       - traefik.http.services.glitchtip.loadbalancer.server.port=8000
@@ -100,6 +101,7 @@ services:
     networks: [proxy, analytics-internal]
     labels:
       - traefik.enable=true
+      - traefik.docker.network=proxy
       - traefik.http.routers.umami.rule=Host(`umami.localhost`)
       - traefik.http.routers.umami.entrypoints=web
       - traefik.http.services.umami.loadbalancer.server.port=3000
@@ -112,5 +114,6 @@ volumes:
 
 networks:
   proxy:
+    name: proxy
   glitchtip-internal:
   analytics-internal:
