@@ -38,4 +38,10 @@ describe('captureTrafficSource', () => {
     const second = captureTrafficSource('?utm_source=something-else', '', storage)
     expect(second.utm_source).toBe('newsletter')
   })
+
+  it('falls back to nulls when the referrer is a malformed URL instead of throwing', () => {
+    const storage = createMemoryStorage()
+    const source = captureTrafficSource('', 'not-a-valid-url', storage)
+    expect(source).toEqual({ utm_source: null, ref: null })
+  })
 })
