@@ -40,6 +40,27 @@ npx playwright install --with-deps chromium
 npm start 30   # simule 30 parcours utilisateurs avec abandons réalistes à chaque étape
 ```
 
+## Générer le rapport d'observabilité automatiquement
+
+Une fois la stack lancée et du trafic de démo généré, un script se connecte à Umami et GlitchTip, prend les captures d'écran requises, calcule les vrais chiffres (taux de rebond, conversion, panier moyen, etc.) et produit `docs/rapport-observabilite.pdf`.
+
+Configuration préalable, une fois :
+
+1. Dans `.env`, renseigner `UMAMI_ADMIN_USERNAME` / `UMAMI_ADMIN_PASSWORD` avec les identifiants admin Umami.
+2. Renseigner `GLITCHTIP_EMAIL` / `GLITCHTIP_PASSWORD` avec un compte GlitchTip membre de l'organisation. Un compte de service dédié est recommandé.
+3. Créer une fois le rapport Umami **Funnels** : site Eco-Hardware Shop → **Funnels** → **+ Funnel** → ajouter `view_product`, `add_to_cart`, `checkout_start`, `checkout_success` dans cet ordre, puis sauvegarder. Le rapport persiste ensuite. Si le Funnel n'existe pas encore, le script capture automatiquement l'onglet **Events** à la place.
+
+Lancer :
+
+```bash
+cd scripts/generate-report
+npm install
+npm start        # 7 derniers jours par défaut
+npm start 30     # fenêtre personnalisée, en jours
+```
+
+Chaque section échoue indépendamment : si une capture ou un appel API ne passe pas, le PDF est quand même généré avec les placeholders restants visibles et l'erreur précise affichée dans le terminal.
+
 ## Architecture
 
 ```

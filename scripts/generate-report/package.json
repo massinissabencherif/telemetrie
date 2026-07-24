@@ -1,0 +1,16 @@
+{
+  "name": "eshop-monitor-generate-report",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=../../.env generate-report.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "marked": "^18.0.6",
+    "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}
