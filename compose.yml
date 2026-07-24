@@ -14,6 +14,8 @@ services:
 
   web:
     build: ./web
+    environment:
+      NUXT_PUBLIC_GLITCHTIP_DSN: ${NUXT_PUBLIC_GLITCHTIP_DSN}
     networks: [proxy]
     labels:
       - traefik.enable=true
@@ -23,6 +25,58 @@ services:
     depends_on: [traefik]
     restart: unless-stopped
 
+  glitchtip-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_POSTGRES_PASSWORD}
+    volumes:
+      - glitchtip-pg-data:/var/lib/postgresql/data
+    networks: [glitchtip-internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  glitchtip-redis:
+    image: redis:7-alpine
+    networks: [glitchtip-internal]
+    restart: unless-stopped
+
+  glitchtip:
+    image: glitchtip/glitchtip:6
+    depends_on:
+      glitchtip-postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_POSTGRES_PASSWORD}@glitchtip-postgres:5432/glitchtip
+      VALKEY_URL: redis://glitchtip-redis:6379
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      EMAIL_URL: consolemail://
+      GLITCHTIP_DOMAIN: http://glitchtip.localhost
+      DEFAULT_FROM_EMAIL: noreply@eshop-monitor.local
+      SERVER_ROLE: all_in_one
+    volumes:
+      - glitchtip-uploads:/code/uploads
+    networks: [proxy, glitchtip-internal]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.glitchtip.rule=Host(`glitchtip.localhost`)
+      - traefik.http.routers.glitchtip.entrypoints=web
+      - traefik.http.services.glitchtip.loadbalancer.server.port=8000
+    restart: unless-stopped
+
+volumes:
+  glitchtip-pg-data:
+  glitchtip-uploads:
+
 networks:
   proxy:
     name: proxy
+  glitchtip-internal:
