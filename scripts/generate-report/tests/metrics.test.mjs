@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
+  computeAverageCartValue,
   computeBounceRate,
   computeConversionRate,
   computeFunnelSteps,
-  findHighestDropoffStep
+  computeUtmBreakdown,
+  findHighestDropoffStep,
+  parseEventRecord
 } from '../lib/metrics.mjs'
 
 describe('computeBounceRate', () => {
@@ -60,5 +63,49 @@ describe('findHighestDropoffStep', () => {
     })
 
     expect(findHighestDropoffStep(steps)).toBe('checkout_success')
+  })
+})
+
+describe('parseEventRecord', () => {
+  it('zips propertyKeys/propertyValues into an object, converting the "null" string to null', () => {
+    const record = {
+      propertyKeys: ['items', 'ref', 'utm_source', 'value'],
+      propertyValues: ['1.0000', 'null', 'newsletter', '24.9000']
+    }
+
+    expect(parseEventRecord(record)).toEqual({
+      items: '1.0000',
+      ref: null,
+      utm_source: 'newsletter',
+      value: '24.9000'
+    })
+  })
+})
+
+describe('computeAverageCartValue', () => {
+  it('averages the numeric value property across records', () => {
+    const records = [
+      { propertyKeys: ['value'], propertyValues: ['24.9000'] },
+      { propertyKeys: ['value'], propertyValues: ['64.5000'] }
+    ]
+
+    expect(computeAverageCartValue(records)).toBeCloseTo(44.7, 1)
+  })
+
+  it('ignores records with a null value and returns 0 for an empty list', () => {
+    expect(computeAverageCartValue([{ propertyKeys: ['value'], propertyValues: ['null'] }])).toBe(0)
+    expect(computeAverageCartValue([])).toBe(0)
+  })
+})
+
+describe('computeUtmBreakdown', () => {
+  it('counts occurrences per utm_source, grouping missing values as "direct"', () => {
+    const records = [
+      { propertyKeys: ['utm_source'], propertyValues: ['newsletter'] },
+      { propertyKeys: ['utm_source'], propertyValues: ['newsletter'] },
+      { propertyKeys: ['utm_source'], propertyValues: ['null'] }
+    ]
+
+    expect(computeUtmBreakdown(records)).toEqual({ newsletter: 2, direct: 1 })
   })
 })
